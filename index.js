@@ -21,22 +21,28 @@ function dbify(client, callback) {
         callback(null, through2.obj(function(request, enc, cb) {
             var self = this;
 
-            var insertRequest = 'insert into requests (host, cookie, remoteAddress, method, url, user_agent)'
+            var insertRequest = 'insert into requests (host, cookie, remoteAddress, method, url, user_agent) VALUES ($1, $2, $3, $4, $5, $6);';
 
-            //TODO move data to string
-            client.query(insertRequest, function(err, result) {
+             client.query(insertRequest,
+                         [request.host,
+                          request.cookie,
+                          request.remoteAddress,
+                          request.method,
+                          request.url,
+                          request['user-agent']],
+                         function(err, result) {
 
-                if (err) {
-                    console.log('error while inserting request:', err)
-                    cb();
-                    return;
-                }
+                             if (err) {
+                                 console.log('error while inserting request:', err)
+                                 cb();
+                                 return;
+                             }
 
-                self.push(request);
+                             self.push(request);
 
-                cb();
+                             cb();
 
-            })
+                         })
 
         }))
 
@@ -85,5 +91,6 @@ function uuidExtension(client, callback) {
 
 }
 
-module.exports.requestTable = requestTable;
+module.exports.requestTable       = requestTable;
 module.exports.deleteRequestTable = deleteRequestTable;
+module.exports.dbify              = dbify;
