@@ -2,7 +2,6 @@
  * (C) 2015 Seth Lakowske
  */
 
-var pg       = require('pg');
 var through2 = require('through2');
 
 /*
@@ -23,8 +22,8 @@ function dbify(client, callback) {
             var self = this;
 
             var insertRequest = 'insert into requests (host, cookie, remoteAddress, method, url, user_agent)'
+
             //TODO move data to string
-            
             client.query(insertRequest, function(err, result) {
 
                 if (err) {
@@ -49,14 +48,42 @@ function dbify(client, callback) {
  */
 function requestTable(client, callback) {
 
-    var createRequests = 'create table if not exists requests (request_id uuid primary key default uuid_generate_v4(),'
-        + 'request_time timestamp with timezone'
-        + 'host text,'
-        + 'cookie text,'
-        + 'remoteAddress text not null,'
-        + 'method text not null,'
-        + 'url text not null,'
-        + 'user_agent text'
-    client.query(createRequests, callback);
+    uuidExtension(client, function(err, result) {
+
+        var createRequests = 'create table if not exists requests ('
+            + 'request_id uuid primary key default uuid_generate_v4(),'
+            + 'request_time timestamptz DEFAULT current_timestamp,'
+            + 'host text,'
+            + 'cookie text,'
+            + 'remoteAddress text not null,'
+            + 'method text not null,'
+            + 'url text not null,'
+            + 'user_agent text'
+            + ')'
+
+        console.log(createRequests);
+
+        client.query(createRequests, callback);
+
+    })
 
 }
+
+function deleteRequestTable(client, callback) {
+
+    var deleteRequests = 'drop table requests'
+
+    client.query(deleteRequests, callback);
+
+}
+
+function uuidExtension(client, callback) {
+
+    var extension = 'CREATE EXTENSION "uuid-ossp";';
+
+    client.query(extension, callback);
+
+}
+
+module.exports.requestTable = requestTable;
+module.exports.deleteRequestTable = deleteRequestTable;
