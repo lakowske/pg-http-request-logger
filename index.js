@@ -4,6 +4,23 @@
 
 var through2 = require('through2');
 
+function request() {
+
+    var dbify       = this.reqPersister.dbify();
+
+    return function(req, res) {
+        var millis                   = Date.now();
+        var reqDescription           = req.headers;
+        reqDescription.url           = req.url;
+        reqDescription.time          = millis;
+        reqDescription.remoteAddress = req.connection.remoteAddress;
+        reqDescription.method        = req.method;
+
+        dbify.write(reqDescription);
+    };
+
+}
+
 /*
  * Create a request stream.  The callback is passed an error if the table could not be
  * verified or created.  Otherwise, a stream usable stream is passed to the callback.
@@ -21,30 +38,20 @@ function dbify(client, callback) {
         callback(null, through2.obj(function(request, enc, cb) {
             var self = this;
 
-            var insertRequest = 'insert into requests (host, cookie, remoteAddress, method, url, user_agent) VALUES ($1, $2, $3, $4, $5, $6);';
+            insertRequest(client, request, function(err, result) {
+                if (err) {
+                    console.log('error while inserting request:', err)
+                    cb();
+                    return;
+                }
 
-             client.query(insertRequest,
-                         [request.host,
-                          request.cookie,
-                          request.remoteAddress,
-                          request.method,
-                          request.url,
-                          request['user-agent']],
-                         function(err, result) {
+                self.push(request);
 
-                             if (err) {
-                                 console.log('error while inserting request:', err)
-                                 cb();
-                                 return;
-                             }
+                cb();
 
-                             self.push(request);
+            });
 
-                             cb();
-
-                         })
-
-        }))
+        }));
 
     })
 }
@@ -75,9 +82,24 @@ function requestTable(client, callback) {
 
 }
 
+function insertRequest(client, request, callback) {
+
+    var insertRequest = 'insert into requests (host, cookie, remoteAddress, method, url, user_agent) VALUES ($1, $2, $3, $4, $5, $6);';
+
+    client.query(insertRequest,
+                 [request.host,
+                  request.cookie,
+                  request.remoteAddress,
+                  request.method,
+                  request.url,
+                  request['user-agent']],
+                 callback)
+
+}
+
 function deleteRequestTable(client, callback) {
 
-    var deleteRequests = 'drop table requests'
+    var deleteRequests = 'drop table requests cascade'
 
     client.query(deleteRequests, callback);
 
@@ -91,6 +113,8 @@ function uuidExtension(client, callback) {
 
 }
 
+module.exports.uuidExtension      = uuidExtension;
 module.exports.requestTable       = requestTable;
+module.exports.insertRequest      = insertRequest;
 module.exports.deleteRequestTable = deleteRequestTable;
 module.exports.dbify              = dbify;
