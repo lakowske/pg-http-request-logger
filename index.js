@@ -3,6 +3,7 @@
  */
 
 var through2 = require('through2');
+var uuid     = require('node-uuid');
 
 function request() {
 
@@ -64,7 +65,7 @@ function requestTable(client, callback) {
     uuidExtension(client, function(err, result) {
 
         var createRequests = 'create table if not exists requests ('
-            + 'request_id uuid primary key default uuid_generate_v4(),'
+            + 'request_id text primary key,'
             + 'request_time timestamptz DEFAULT current_timestamp,'
             + 'host text,'
             + 'cookie text,'
@@ -84,24 +85,33 @@ function requestTable(client, callback) {
 
 function insertRequest(client, request, callback) {
 
-    var insertRequest = 'insert into requests (host, cookie, remoteAddress, method, url, user_agent) VALUES ($1, $2, $3, $4, $5, $6);';
+    var insertRequest = 'insert into requests (request_id, host, cookie, remoteAddress, method, url, user_agent) VALUES ($1, $2, $3, $4, $5, $6, $7);';
+
+    var id = request.request_id;
+
+    if (id === undefined) id = uuid.v4();
 
     client.query(insertRequest,
-                 [request.host,
+                 [id,
+                  request.host,
                   request.cookie,
                   request.remoteAddress,
                   request.method,
                   request.url,
                   request['user-agent']],
-                 callback)
+                 function (err, result) {
+                     callback(err, result, id);
+                 }
+                )
 
+    return id;
 }
 
-function deleteRequestTable(client, callback) {
+function dropRequestTable(client, callback) {
 
-    var deleteRequests = 'drop table requests cascade'
+    var dropRequests = 'drop table requests cascade'
 
-    client.query(deleteRequests, callback);
+    client.query(dropRequests, callback);
 
 }
 
@@ -116,5 +126,5 @@ function uuidExtension(client, callback) {
 module.exports.uuidExtension      = uuidExtension;
 module.exports.requestTable       = requestTable;
 module.exports.insertRequest      = insertRequest;
-module.exports.deleteRequestTable = deleteRequestTable;
+module.exports.dropRequestTable   = dropRequestTable;
 module.exports.dbify              = dbify;
