@@ -5,21 +5,12 @@
 var through2 = require('through2');
 var uuid     = require('node-uuid');
 
-function request() {
-
-    var dbify       = this.reqPersister.dbify();
-
-    return function(req, res) {
-        var millis                   = Date.now();
-        var reqDescription           = req.headers;
-        reqDescription.url           = req.url;
-        reqDescription.time          = millis;
-        reqDescription.remoteAddress = req.connection.remoteAddress;
-        reqDescription.method        = req.method;
-
-        dbify.write(reqDescription);
-    };
-
+function request(req, res) {
+    var reqDescription           = req.headers;
+    reqDescription.url           = req.url;
+    reqDescription.remoteAddress = req.connection.remoteAddress;
+    reqDescription.method        = req.method;
+    return reqDescription;
 }
 
 /*
@@ -62,24 +53,20 @@ function dbify(client, callback) {
  */
 function requestTable(client, callback) {
 
-    uuidExtension(client, function(err, result) {
+    var createRequests = 'create table if not exists requests ('
+        + 'request_id text primary key,'
+        + 'request_time timestamptz DEFAULT current_timestamp,'
+        + 'host text,'
+        + 'cookie text,'
+        + 'remoteAddress text not null,'
+        + 'method text not null,'
+        + 'url text not null,'
+        + 'user_agent text'
+        + ')'
 
-        var createRequests = 'create table if not exists requests ('
-            + 'request_id text primary key,'
-            + 'request_time timestamptz DEFAULT current_timestamp,'
-            + 'host text,'
-            + 'cookie text,'
-            + 'remoteAddress text not null,'
-            + 'method text not null,'
-            + 'url text not null,'
-            + 'user_agent text'
-            + ')'
+    console.log(createRequests);
 
-        console.log(createRequests);
-
-        client.query(createRequests, callback);
-
-    })
+    client.query(createRequests, callback);
 
 }
 
@@ -115,15 +102,7 @@ function dropRequestTable(client, callback) {
 
 }
 
-function uuidExtension(client, callback) {
-
-    var extension = 'CREATE EXTENSION "uuid-ossp";';
-
-    client.query(extension, callback);
-
-}
-
-module.exports.uuidExtension      = uuidExtension;
+module.exports.request            = request;
 module.exports.requestTable       = requestTable;
 module.exports.insertRequest      = insertRequest;
 module.exports.dropRequestTable   = dropRequestTable;
