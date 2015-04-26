@@ -100,30 +100,50 @@ function requestTable(client, callback) {
 
 }
 
+function deleteRequest(client, request, callback) {
+    var deleteRequest = 'delete from requests where request_id = $1';
+    client.query(deleteRequest, [request['request_id']], function (err, result) {
+        if (err) console.log(err);
+        if (result) console.log(result);
+        callback(err, result);
+    })
+}
+
 function insertRequest(client, request, callback) {
 
-    var insertRequest = 'replace into requests (request_id, host, cookie, remoteAddress, method, url, user_agent, json) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);';
+    var insertId = uuid.v4();
 
-    var id = request.request_id;
+    var onDelete = function() {
 
-    if (id === undefined) id = uuid.v4();
-    var json = JSON.stringify(request);
-    client.query(insertRequest,
-                 [id,
-                  request.host,
-                  request.cookie,
-                  request.remoteAddress,
-                  request.method,
-                  request.url,
-                  request['user-agent'],
-                  json
-                 ],
-                 function (err, result) {
-                     callback(err, result, id);
-                 }
-                )
+        var insertRequest = 'insert into requests (request_id, host, cookie, remoteaddress, method, url, user_agent, json) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);';
 
-    return id;
+        var id = request.request_id;
+
+        if (id === undefined) id = insertId;
+        var json = JSON.stringify(request);
+        console.log('inserting : ' + json);
+        client.query(insertRequest,
+                     [id,
+                      request.host,
+                      request.cookie,
+                      request.remoteaddress,
+                      request.method,
+                      request.url,
+                      request['user-agent'],
+                      json
+                     ],
+                     function (err, result) {
+                         console.log(err);
+                         callback(err, result, id);
+                     }
+                    )
+    }
+
+    deleteRequest(client, request, function(err, result) {
+        onDelete();
+    });
+
+    return insertId;
 }
 
 function dropRequestTable(client, callback) {
