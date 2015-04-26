@@ -19,15 +19,17 @@
     "stream"
   ],
   "author": "Seth Lakowske",
-  "license": "BSD3",
+  "license": "GPLv2",
   "bugs": {
     "url": "https://github.com/lakowske/pg-http-request-logger/issues"
   },
   "homepage": "https://github.com/lakowske/pg-http-request-logger",
   "dependencies": {
+    "cookieparser": "^0.1.0",
     "node-uuid": "^1.4.3",
     "pg": "^4.3.0",
-    "through2": "^0.6.5"
+    "through2": "^0.6.5",
+    "useragent": "^2.1.5"
   },
   "devDependencies": {
     "tape": "^4.0.0"

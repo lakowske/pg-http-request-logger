@@ -6,6 +6,7 @@ var test       = require('tape');
 var pg         = require('pg');
 var through2   = require('through2');
 var pgReq      = require('./');
+var expText    = require('./expTest');
 
 test('can create a request table', function(t) {
 
@@ -24,7 +25,7 @@ test('can create a request table', function(t) {
 
             t.notOk(err);
 
-            pgReq.deleteRequestTable(client, function(err, result) {
+            pgReq.dropRequestTable(client, function(err, result) {
                 t.notOk(err)
                 client.end();
                 t.end();
