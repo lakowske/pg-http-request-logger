@@ -21,14 +21,14 @@ function request(req, res) {
 
 function expand(reqDescription) {
     if (reqDescription['user-agent']) {
-        var agent = useragent.lookup(reqDescription.headers['user-agent']);
+        var agent = useragent.lookup(reqDescription['user-agent']);
         var parsedAgent              = agent.toJSON();
         reqDescription.agent         = parsedAgent;
     }
 
     if (reqDescription['cookie']) {
-        var cookie = cookieparser.parse(req.headers['cookie']);
-        reqDescription.cookieparser  = cookie;        
+        var cookie = cookieparser.parse(reqDescription['cookie']);
+        reqDescription.cookieparser  = cookie;
     }
 
     if (reqDescription['url']) {
