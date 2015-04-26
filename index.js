@@ -10,18 +10,35 @@ var url          = require('url');
 var reqExp       = require('./requestExpansion');
 
 function request(req, res) {
-    var agent = useragent.lookup(req.headers['user-agent']);
-    var parsedAgent              = agent.toJSON();
-    var cookie = cookieparser.parse(req.headers['cookie']);
-    var urlParts = url.parse(req.url, true);
+
     var reqDescription           = req.headers;
     reqDescription.url           = req.url;
     reqDescription.remoteAddress = req.connection.remoteAddress;
     reqDescription.method        = req.method;
-    reqDescription.agent         = parsedAgent;
-    reqDescription.cookieparser  = cookie;
-    reqDescription.urlparse      = urlParts;
+
+    return expand(reqDescription);
+}
+
+function expand(reqDescription) {
+    if (reqDescription['user-agent']) {
+        var agent = useragent.lookup(reqDescription.headers['user-agent']);
+        var parsedAgent              = agent.toJSON();
+        reqDescription.agent         = parsedAgent;
+    }
+
+    if (reqDescription['cookie']) {
+        var cookie = cookieparser.parse(req.headers['cookie']);
+        reqDescription.cookieparser  = cookie;        
+    }
+
+    if (reqDescription['url']) {
+        var urlParts = url.parse(reqDescription['url'], true);
+        reqDescription.urlparse      = urlParts;
+    }
+
     var flat = reqExp.flatten(reqDescription, reqDescription, '', reqExp.flattenAndRemove);
+    return flat;
+
     return flat;
 }
 
@@ -85,7 +102,7 @@ function requestTable(client, callback) {
 
 function insertRequest(client, request, callback) {
 
-    var insertRequest = 'insert into requests (request_id, host, cookie, remoteAddress, method, url, user_agent, json) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);';
+    var insertRequest = 'replace into requests (request_id, host, cookie, remoteAddress, method, url, user_agent, json) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);';
 
     var id = request.request_id;
 
@@ -118,6 +135,7 @@ function dropRequestTable(client, callback) {
 }
 
 module.exports.request            = request;
+module.exports.expand             = expand;
 module.exports.requestTable       = requestTable;
 module.exports.insertRequest      = insertRequest;
 module.exports.dropRequestTable   = dropRequestTable;
