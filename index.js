@@ -101,19 +101,53 @@ function requestTable(client, callback) {
 }
 
 function deleteRequest(client, request, callback) {
-    var deleteRequest = 'delete from requests where request_id = $1';
-    client.query(deleteRequest, [request['request_id']], function (err, result) {
+    var deleteClasses = 'delete from classes where request_id = $1';
+    client.query(deleteClasses, [request['request_id']], function(err, result) {
         if (err) console.log(err);
         if (result) console.log(result);
-        callback(err, result);
+
+        var deleteRequest = 'delete from requests where request_id = $1';
+        client.query(deleteRequest, [request['request_id']], function (err, result) {
+            if (err) console.log(err);
+            callback(err, result);
+        })
     })
+}
+
+function update(client, request, callback) {
+
+    var update = 'update requests set (request_id, host, cookie, remoteaddress, method, url, user_agent, json) = ($1, $2, $3, $4, $5, $6, $7, $8) where request_id = $1'
+    var json = JSON.stringify(request);
+    console.log('updating : ' + json);
+
+    client.query(update,
+                 [request['request_id'],
+                  request.host,
+                  request.cookie,
+                  request.remoteaddress,
+                  request.method,
+                  request.url,
+                  request['user-agent'],
+                  json
+                 ], function(err, result) {
+                     if (err) console.log(err);
+                     callback(err, result);
+                 });
+}
+
+function exists(client, request, callback) {
+    var exists = 'select * from requests where request_id = $1';
+
+    client.query(exists, [request['request_id']], function(err, result) {
+        callback(err, result, true);
+    });
 }
 
 function insertRequest(client, request, callback) {
 
     var insertId = uuid.v4();
 
-    var onDelete = function() {
+    var onInsert = function() {
 
         var insertRequest = 'insert into requests (request_id, host, cookie, remoteaddress, method, url, user_agent, json) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);';
 
@@ -139,8 +173,13 @@ function insertRequest(client, request, callback) {
                     )
     }
 
-    deleteRequest(client, request, function(err, result) {
-        onDelete();
+    exists(client, request, function(err, result) {
+        if (err) console.log(err);
+        if (result.rowCount > 0) {
+            update(client, request, callback);
+        } else {
+            onInsert(client, request, callback);
+        }
     });
 
     return insertId;
