@@ -13,7 +13,7 @@ function request(req, res) {
 
     var reqDescription           = req.headers;
     reqDescription.url           = req.url;
-    reqDescription.remoteAddress = req.connection.remoteAddress;
+    reqDescription.remoteaddress = req.connection.remoteAddress;
     reqDescription.method        = req.method;
 
     return expand(reqDescription);
@@ -116,7 +116,7 @@ function deleteRequest(client, request, callback) {
 
 function update(client, request, callback) {
 
-    var update = 'update requests set (request_id, host, cookie, remoteaddress, method, url, user_agent, json) = ($1, $2, $3, $4, $5, $6, $7, $8) where request_id = $1'
+    var update = 'update requests set (request_id, host, cookie, remoteAddress, method, url, user_agent, json) = ($1, $2, $3, $4, $5, $6, $7, $8) where request_id = $1'
     var json = JSON.stringify(request);
     console.log('updating : ' + json);
 
@@ -149,13 +149,13 @@ function insertRequest(client, request, callback) {
 
     var onInsert = function() {
 
-        var insertRequest = 'insert into requests (request_id, host, cookie, remoteaddress, method, url, user_agent, json) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);';
+        var insertRequest = 'insert into requests (request_id, host, cookie, remoteAddress, method, url, user_agent, json) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);';
 
         var id = request.request_id;
 
         if (id === undefined) id = insertId;
         var json = JSON.stringify(request);
-        console.log('inserting : ' + json);
+
         client.query(insertRequest,
                      [id,
                       request.host,
